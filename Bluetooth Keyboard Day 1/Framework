@@ -1,0 +1,61 @@
+import CoreBluetooth
+
+class BluetoothManager: NSObject, CBPeripheralManagerDelegate {
+    
+    var peripheralManager: CBPeripheralManager?
+    
+    override init() {
+        super.init()
+        // Initialize the peripheral manager
+        peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
+    }
+    
+    // MARK: - CBPeripheralManagerDelegate methods
+    
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
+        switch peripheral.state {
+        case .poweredOn:
+            // Peripheral is powered on and ready to use
+            startAdvertising()
+        default:
+            print("Peripheral is not ready: \(peripheral.state.rawValue)")
+        }
+    }
+    
+    func startAdvertising() {
+        // Define the service and characteristic UUIDs
+        let keyboardServiceUUID = CBUUID(string: "1234")
+        let keyboardCharacteristicUUID = CBUUID(string: "5678")
+        
+        // Create the characteristic
+        let keyboardCharacteristic = CBMutableCharacteristic(
+            type: keyboardCharacteristicUUID,
+            properties: [.notify, .read, .writeWithoutResponse],
+            value: nil,
+            permissions: [.readable, .writeable]
+        )
+        
+        // Create the service
+        let keyboardService = CBMutableService(type: keyboardServiceUUID, primary: true)
+        keyboardService.characteristics = [keyboardCharacteristic]
+        
+        // Add the service to the peripheral manager
+        peripheralManager?.add(keyboardService)
+        
+        // Start advertising the service
+        peripheralManager?.startAdvertising([
+            CBAdvertisementDataServiceUUIDsKey: [keyboardServiceUUID],
+            CBAdvertisementDataLocalNameKey: "BluetoothKeyboard"
+        ])
+    }
+    
+    func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveWrite requests: [CBATTRequest]) {
+        for request in requests {
+            if let value = request.value, let stringValue = String(data: value, encoding: .utf8) {
+                print("Received value: \(stringValue)")
+                // Handle the received value (e.g., print to console or process input)
+            }
+            peripheralManager?.respond(to: request, withResult: .success)
+        }
+    }
+}

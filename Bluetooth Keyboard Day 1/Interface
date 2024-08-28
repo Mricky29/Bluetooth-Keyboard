@@ -1,0 +1,29 @@
+import UIKit
+
+class ViewController: UIViewController {
+    
+    var bluetoothManager: BluetoothManager?
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // Initialize the Bluetooth manager
+        bluetoothManager = BluetoothManager()
+    }
+    
+    @IBAction func keyTapped(_ sender: UIButton) {
+        guard let key = sender.titleLabel?.text else { return }
+        sendKey(key)
+    }
+    
+    func sendKey(_ key: String) {
+        // Convert the key to data
+        guard let data = key.data(using: .utf8) else { return }
+        
+        // Send the data over Bluetooth
+        bluetoothManager?.peripheralManager?.updateValue(
+            data,
+            for: bluetoothManager?.peripheralManager?.services?.first?.characteristics?.first as! CBMutableCharacteristic,
+            onSubscribedCentrals: nil
+        )
+    }
+}
